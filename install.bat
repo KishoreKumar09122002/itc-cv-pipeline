@@ -7,38 +7,6 @@ echo   ITC Belt Monitor — Installation
 echo ============================================================
 echo.
 
-:: ---- Check Git ----
-git --version >nul 2>&1
-if errorlevel 1 (
-    echo   [WARN] Git not found. Installing Git...
-    echo.
-    echo   Downloading Git for Windows...
-    curl.exe -L -o "%TEMP%\git-installer.exe" https://github.com/git-for-windows/git/releases/download/v2.47.2.windows.1/Git-2.47.2-64-bit.exe
-    if errorlevel 1 (
-        echo   [ERROR] Failed to download Git.
-        echo   Install manually from https://git-scm.com/download/win
-        pause
-        exit /b 1
-    )
-    echo   Running Git installer (silent)...
-    "%TEMP%\git-installer.exe" /VERYSILENT /NORESTART /SP-
-    if errorlevel 1 (
-        echo   [ERROR] Git installation failed.
-        echo   Install manually from https://git-scm.com/download/win
-        pause
-        exit /b 1
-    )
-    del "%TEMP%\git-installer.exe" 2>nul
-    set "PATH=%PATH%;C:\Program Files\Git\bin;C:\Program Files\Git\cmd"
-    git --version >nul 2>&1
-    if errorlevel 1 (
-        echo   [ERROR] Git still not found after install. Restart terminal and retry.
-        pause
-        exit /b 1
-    )
-)
-for /f "tokens=*" %%i in ('git --version 2^>^&1') do echo   [OK] %%i
-
 :: ---- Check Python ----
 python --version >nul 2>&1
 if errorlevel 1 (
