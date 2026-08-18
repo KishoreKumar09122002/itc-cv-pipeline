@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ============================================================
-echo   ITC Belt Monitor — Installation
+echo   ITC Belt Monitor - Installation
 echo ============================================================
 echo.
 
@@ -56,17 +56,8 @@ if not exist "venv\Scripts\activate.bat" (
 :: ---- Install packages ----
 call venv\Scripts\activate.bat
 
-if exist "tools\pip_packages" (
-    echo   Installing packages (offline)...
-    pip install --no-index --find-links=tools\pip_packages -r requirements.txt -q 2>nul
-    if errorlevel 1 (
-        echo   [WARN] Offline install failed, falling back to internet...
-        pip install -r requirements.txt -q
-    )
-) else (
-    echo   Installing packages (internet)...
-    pip install -r requirements.txt -q
-)
+echo   Installing packages...
+pip install -r requirements.txt -q
 if errorlevel 1 (
     echo   [ERROR] Package installation failed.
     pause
@@ -85,29 +76,29 @@ if errorlevel 1 (
 
 python -c "import openvino; print('   OpenVINO:       OK')" 2>nul
 if errorlevel 1 (
-    echo   [WARN] OpenVINO not available — will use PyTorch CPU (slower on Intel)
+    echo   [WARN] OpenVINO not available, will use PyTorch CPU
 )
 
 :: ---- Check model weights ----
 if exist "runs\pose\training_data\runs\overhead_pose_v1\weights\best_openvino_model\best.bin" (
-    echo   [OK] Model: OpenVINO (optimized for Intel CPU)
+    echo   [OK] Model: OpenVINO
 ) else if exist "runs\pose\training_data\runs\overhead_pose_v1\weights\best.pt" (
-    echo   [OK] Model: PyTorch (best.pt)
+    echo   [OK] Model: PyTorch
 ) else (
-    echo   [WARN] No model weights found — pipeline will download generic model
+    echo   [WARN] No model weights found
 )
 
 :: ---- Check config ----
 if exist "config\belt_config_top.json" (
     echo   [OK] Belt config found
 ) else (
-    echo   [INFO] No belt config yet — run calibrate_corners.bat after install
+    echo   [INFO] No belt config yet. Run calibrate_corners.bat after install.
 )
 
 :: ---- Check ffmpeg ----
-python -c "import imageio_ffmpeg; print('   ffmpeg:         ' + imageio_ffmpeg.get_ffmpeg_exe())" 2>nul
+python -c "import imageio_ffmpeg; print('   ffmpeg:         OK')" 2>nul
 if errorlevel 1 (
-    echo   [WARN] ffmpeg not available — video recording will be disabled
+    echo   [WARN] ffmpeg not available
 )
 
 :: ---- Create output directories ----
@@ -121,8 +112,8 @@ echo ============================================================
 echo   Installation complete!
 echo.
 echo   Next steps:
-echo     1. Calibrate corners:  calibrate_corners.bat ^<RTSP_URL^>
-echo     2. Start everything:   run.bat ^<RTSP_URL^>
+echo     1. Calibrate corners:  .\calibrate_corners.bat
+echo     2. Start everything:   .\run.bat
 echo ============================================================
 echo.
 pause
