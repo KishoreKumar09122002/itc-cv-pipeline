@@ -7,14 +7,44 @@ echo   ITC Belt Monitor — Installation
 echo ============================================================
 echo.
 
+:: ---- Check Git ----
+git --version >nul 2>&1
+if errorlevel 1 (
+    echo   [WARN] Git not found. Installing Git...
+    echo.
+    echo   Downloading Git for Windows...
+    curl.exe -L -o "%TEMP%\git-installer.exe" https://github.com/git-for-windows/git/releases/download/v2.47.2.windows.1/Git-2.47.2-64-bit.exe
+    if errorlevel 1 (
+        echo   [ERROR] Failed to download Git.
+        echo   Install manually from https://git-scm.com/download/win
+        pause
+        exit /b 1
+    )
+    echo   Running Git installer (silent)...
+    "%TEMP%\git-installer.exe" /VERYSILENT /NORESTART /SP-
+    if errorlevel 1 (
+        echo   [ERROR] Git installation failed.
+        echo   Install manually from https://git-scm.com/download/win
+        pause
+        exit /b 1
+    )
+    del "%TEMP%\git-installer.exe" 2>nul
+    set "PATH=%PATH%;C:\Program Files\Git\bin;C:\Program Files\Git\cmd"
+    git --version >nul 2>&1
+    if errorlevel 1 (
+        echo   [ERROR] Git still not found after install. Restart terminal and retry.
+        pause
+        exit /b 1
+    )
+)
+for /f "tokens=*" %%i in ('git --version 2^>^&1') do echo   [OK] %%i
+
 :: ---- Check Python ----
 python --version >nul 2>&1
 if errorlevel 1 (
     echo   [ERROR] Python not found in PATH.
     echo.
-    echo   Install Python 3.10+ first:
-    echo     tools\python-3.14.0-amd64.exe
-    echo.
+    echo   Install Python 3.10+ from https://www.python.org/downloads/
     echo   IMPORTANT: Check "Add Python to PATH" during installation.
     echo.
     pause
@@ -55,20 +85,24 @@ if not exist "venv\Scripts\activate.bat" (
     echo   [OK] Virtual environment already exists.
 )
 
-:: ---- Install packages from offline cache ----
-echo   Installing packages (offline)...
+:: ---- Install packages ----
 call venv\Scripts\activate.bat
 
-pip install --no-index --find-links=tools\pip_packages -r requirements.txt -q 2>nul
-if errorlevel 1 (
-    echo   [WARN] Some packages failed from offline cache, retrying verbose...
-    pip install --no-index --find-links=tools\pip_packages -r requirements.txt
+if exist "tools\pip_packages" (
+    echo   Installing packages (offline)...
+    pip install --no-index --find-links=tools\pip_packages -r requirements.txt -q 2>nul
     if errorlevel 1 (
-        echo   [ERROR] Package installation failed.
-        echo   If on a machine with internet, run: pip install -r requirements.txt
-        pause
-        exit /b 1
+        echo   [WARN] Offline install failed, falling back to internet...
+        pip install -r requirements.txt -q
     )
+) else (
+    echo   Installing packages (internet)...
+    pip install -r requirements.txt -q
+)
+if errorlevel 1 (
+    echo   [ERROR] Package installation failed.
+    pause
+    exit /b 1
 )
 echo   [OK] All packages installed.
 
@@ -99,7 +133,7 @@ if exist "runs\pose\training_data\runs\overhead_pose_v1\weights\best_openvino_mo
 if exist "config\belt_config_top.json" (
     echo   [OK] Belt config found
 ) else (
-    echo   [WARN] No belt config — run calibrate_corners.bat first
+    echo   [INFO] No belt config yet — run calibrate_corners.bat after install
 )
 
 :: ---- Check ffmpeg ----
@@ -119,10 +153,8 @@ echo ============================================================
 echo   Installation complete!
 echo.
 echo   Next steps:
-echo     1. Discover cameras:   discover_cameras.bat
-echo     2. Calibrate corners:  calibrate_corners.bat
-echo     3. Start pipeline:     start_pipeline.bat
-echo     4. Start dashboard:    start_dashboard.bat
+echo     1. Calibrate corners:  calibrate_corners.bat ^<RTSP_URL^>
+echo     2. Start everything:   run.bat ^<RTSP_URL^>
 echo ============================================================
 echo.
 pause
