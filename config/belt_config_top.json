@@ -1,0 +1,25 @@
+{
+  "source": "top_angle",
+  "pixel_corners": [
+    [
+      1274.0,
+      1434.0
+    ],
+    [
+      1080.0,
+      778.0
+    ],
+    [
+      1364.0,
+      746.0
+    ],
+    [
+      1850.0,
+      1432.0
+    ]
+  ],
+  "belt_length": 1000.0,
+  "belt_height": 400.0,
+  "belt_mode": "full_width",
+  "n_workers": 4
+}

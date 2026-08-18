@@ -1,0 +1,24 @@
+# ITC Belt Monitor — Python dependencies
+# Install: pip install -r requirements.txt
+#
+# Prerequisites (NOT installable via pip):
+#   - Python 3.10+
+#   - ffmpeg system binary (for RTSP stream decoding)
+#   - GPU optional: runs on CPU via OpenVINO (Intel) or PyTorch
+
+# Core pipeline
+ultralytics>=8.4.0
+opencv-python>=4.10.0
+numpy>=2.0.0
+torch>=2.0.0
+
+# Dashboard
+streamlit>=1.30.0
+plotly>=5.18.0
+imageio-ffmpeg>=0.5.0
+
+# CPU-optimized inference (Intel Xeon / Core)
+openvino>=2024.0.0
+
+# ONVIF camera discovery (on-site deployment)
+onvif-zeep>=0.2.12
