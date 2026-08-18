@@ -102,7 +102,13 @@ def main():
         print("Cannot read frame from %s" % VIDEO_PATH)
         return
 
-    window = "Belt Corner Selection — Top Angle"
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+    frame = cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
+
+    window = "Belt Corner Selection - Top Angle"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(window, 1280, 720)
     cv2.setMouseCallback(window, mouse_callback)
