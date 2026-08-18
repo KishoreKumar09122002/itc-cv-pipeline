@@ -95,7 +95,7 @@ start "MediaMTX" cmd /c "!MEDIAMTX!"
 timeout /t 2 /nobreak >nul
 
 :: ---- Stream video with ffmpeg (-re = real-time speed, -stream_loop = loop forever) ----
-"!FFMPEG!" -re -stream_loop -1 -i "!VIDEO!" -c copy -f rtsp rtsp://localhost:8554/live
+"!FFMPEG!" -re -stream_loop -1 -i "!VIDEO!" -c:v libx264 -preset ultrafast -tune zerolatency -crf 23 -an -f rtsp rtsp://localhost:8554/live
 
 echo.
 echo   Streaming stopped.
