@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ============================================================
-echo   ITC Belt Monitor — Installation
+echo   ITC Belt Monitor - Installation
 echo ============================================================
 echo.
 
@@ -56,17 +56,8 @@ if not exist "venv\Scripts\activate.bat" (
 :: ---- Install packages ----
 call venv\Scripts\activate.bat
 
-if exist "tools\pip_packages" (
-    echo   Installing packages (offline)...
-    pip install --no-index --find-links=tools\pip_packages -r requirements.txt -q 2>nul
-    if errorlevel 1 (
-        echo   [WARN] Offline install failed, falling back to internet...
-        pip install -r requirements.txt -q
-    )
-) else (
-    echo   Installing packages (internet)...
-    pip install -r requirements.txt -q
-)
+echo   Installing packages...
+pip install -r requirements.txt -q
 if errorlevel 1 (
     echo   [ERROR] Package installation failed.
     pause
@@ -85,7 +76,7 @@ if errorlevel 1 (
 
 python -c "import openvino; print('   OpenVINO:       OK')" 2>nul
 if errorlevel 1 (
-    echo   [WARN] OpenVINO not available — will use PyTorch CPU (slower on Intel)
+    echo   [WARN] OpenVINO not available, will use PyTorch CPU (slower on Intel)
 )
 
 :: ---- Check model weights ----
@@ -94,20 +85,20 @@ if exist "runs\pose\training_data\runs\overhead_pose_v1\weights\best_openvino_mo
 ) else if exist "runs\pose\training_data\runs\overhead_pose_v1\weights\best.pt" (
     echo   [OK] Model: PyTorch (best.pt)
 ) else (
-    echo   [WARN] No model weights found — pipeline will download generic model
+    echo   [WARN] No model weights found, pipeline will download generic model
 )
 
 :: ---- Check config ----
 if exist "config\belt_config_top.json" (
     echo   [OK] Belt config found
 ) else (
-    echo   [INFO] No belt config yet — run calibrate_corners.bat after install
+    echo   [INFO] No belt config yet. Run calibrate_corners.bat after install.
 )
 
 :: ---- Check ffmpeg ----
-python -c "import imageio_ffmpeg; print('   ffmpeg:         ' + imageio_ffmpeg.get_ffmpeg_exe())" 2>nul
+python -c "import imageio_ffmpeg; print('   ffmpeg:         OK')" 2>nul
 if errorlevel 1 (
-    echo   [WARN] ffmpeg not available — video recording will be disabled
+    echo   [WARN] ffmpeg not available, video recording will be disabled
 )
 
 :: ---- Create output directories ----
