@@ -1,13 +1,16 @@
-"""Live RTSP pipeline — production-grade frame-by-frame processing.
+"""Live pipeline — production-grade frame-by-frame processing.
 
-Reads from an RTSP camera stream (or any OpenCV-compatible URL),
+Reads from an RTSP camera stream or a local video file,
 runs YOLO + ByteTrack + StationMapper + MovingZoneTracker,
 and writes results to SQLite in real time.
 
 Usage:
-  python live_pipeline.py --url rtsp://192.168.1.50:8554/live --config config/belt_config_top.json --speed 2.0
-  python live_pipeline.py --url rtsp://192.168.1.50:8554/live --config config/belt_config_top.json --speed 2.0 --db output/live.db
-  python live_pipeline.py --url rtsp://... --config ... --speed 2.0 --record --stream
+  Live RTSP:
+    python live_pipeline.py --url rtsp://admin:pass@192.168.1.100:554/stream --config config/belt_config_top.json --speed 2.0
+    python live_pipeline.py --url rtsp://... --config ... --speed 2.0 --db output/live.db --record --stream
+
+  Local video (demo):
+    python live_pipeline.py --video recording.avi --config config/belt_config_top.json --speed 2.0 --stream
 """
 import argparse
 import cv2
@@ -265,6 +268,16 @@ def connect_stream(url):
     return threaded, fps, w, h
 
 
+def connect_video(path):
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        return None, 0, 0, 0
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    return cap, fps, w, h
+
+
 def reconnect(url, attempt=0):
     while attempt < MAX_RECONNECT_ATTEMPTS:
         attempt += 1
@@ -307,14 +320,21 @@ def run(args):
     processor.enable_tracking()
     station_mapper = StationMapper(belt_height, BELT_LENGTH, n_workers)
 
-    # Connect to stream
+    # Connect to source
+    is_video = bool(getattr(args, "video", None))
+    source = args.video if is_video else args.url
     print("=" * 60)
-    print("  LIVE PIPELINE — Connecting to %s" % args.url)
+    print("  %s PIPELINE — %s" % (
+        "VIDEO" if is_video else "LIVE",
+        "Loading %s" % source if is_video else "Connecting to %s" % source))
     print("=" * 60, flush=True)
 
-    cap, fps_val, full_w, full_h = connect_stream(args.url)
+    if is_video:
+        cap, fps_val, full_w, full_h = connect_video(source)
+    else:
+        cap, fps_val, full_w, full_h = connect_stream(source)
     if cap is None:
-        print("ERROR: Cannot connect to %s" % args.url)
+        print("ERROR: Cannot open %s" % source)
         sys.exit(1)
 
     out_w = int(full_w * DOWNSCALE)
@@ -331,10 +351,10 @@ def run(args):
         split_zones=True,
     )
 
-    # Recording (separate ffmpeg process)
+    # Recording (separate ffmpeg process — RTSP mode only)
     recorder = None
     recording_path = None
-    if args.record:
+    if args.record and not is_video:
         os.makedirs(RECORDING_DIR, exist_ok=True)
         recording_path = os.path.join(
             RECORDING_DIR,
@@ -397,7 +417,7 @@ def run(args):
     # Database
     conn = init_db(args.db)
     session_id = create_session(
-        conn, args.url, args.config, belt_speed, n_workers,
+        conn, source, args.config, belt_speed, n_workers,
         belt_height, fps_val, recording_path=recording_path,
         annotated_path=annotated_path)
 
@@ -443,6 +463,9 @@ def run(args):
         while True:
             ret, frame = cap.read()
             if not ret or frame is None:
+                if is_video:
+                    print("  [END] Video file finished.", flush=True)
+                    break
                 if not cap.isOpened():
                     print("  [WARN] Stream disconnected — attempting reconnect...",
                           flush=True)
@@ -460,7 +483,10 @@ def run(args):
                 continue
 
             small = cv2.resize(frame, (out_w, out_h))
-            ts = time.time() - stream_start
+            if is_video:
+                ts = frame_count / fps_val
+            else:
+                ts = time.time() - stream_start
             this_second = int(ts)
 
             # --- Detection + Tracking ---
@@ -784,9 +810,11 @@ def run(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Live RTSP Pipeline")
-    parser.add_argument("--url", required=True,
-                        help="RTSP stream URL (e.g. rtsp://192.168.1.50:8554/live)")
+    parser = argparse.ArgumentParser(description="Live Pipeline")
+    parser.add_argument("--url", default=None,
+                        help="RTSP stream URL (e.g. rtsp://admin:pass@192.168.1.100:554/stream)")
+    parser.add_argument("--video", default=None,
+                        help="Local video file path (alternative to --url for demo/offline)")
     parser.add_argument("--config", required=True,
                         help="Belt config JSON path")
     parser.add_argument("--speed", type=float, default=2.0,
@@ -804,4 +832,8 @@ if __name__ == "__main__":
     parser.add_argument("--frame-skip", type=int, default=FRAME_SKIP,
                         help="Process every Nth frame (default: %d)" % FRAME_SKIP)
     args = parser.parse_args()
+    if not args.url and not args.video:
+        parser.error("Either --url (RTSP) or --video (file) is required")
+    if args.url and args.video:
+        parser.error("Use --url or --video, not both")
     run(args)
