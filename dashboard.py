@@ -1266,15 +1266,17 @@ def main():
         st.markdown(
             '<p class="section-title">Live Processing Feed</p>',
             unsafe_allow_html=True)
+        fullscreen_url = "http://localhost:%d/" % stream_port
         st.markdown(
-            '<div style="background:#111;border-radius:8px;overflow:hidden;'
-            'border:2px solid #333;min-height:200px;">'
-            '<img src="%s" style="width:100%%;display:block;" '
+            '<div style="border-radius:8px;overflow:hidden;'
+            'border:2px solid #333;">'
+            '<img src="%s" style="width:100%%;height:auto;display:block;" '
             'alt="Live annotated feed from pipeline" />'
             '</div>'
             '<p style="font-size:0.75rem;opacity:0.5;margin:4px 0 0 0;">'
-            'Direct link: <a href="%s" target="_blank">%s</a></p>'
-            % (stream_url, stream_url, stream_url),
+            'Direct link: <a href="%s" target="_blank">%s</a> · '
+            '<a href="%s" target="_blank">Fullscreen</a></p>'
+            % (stream_url, stream_url, stream_url, fullscreen_url),
             unsafe_allow_html=True)
 
     st.markdown("---")
