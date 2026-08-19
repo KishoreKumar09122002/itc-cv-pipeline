@@ -344,12 +344,6 @@ def run(args):
     belt_poly = scale_corners.reshape((-1, 1, 2)).astype(np.float32)
     mid_y = belt_height / 2.0
 
-    pad = 30
-    bx = max(0, int(scale_corners[:, 0].min()) - pad)
-    by = max(0, int(scale_corners[:, 1].min()) - pad)
-    bx2 = min(out_w, int(scale_corners[:, 0].max()) + pad)
-    by2 = min(out_h, int(scale_corners[:, 1].max()) + pad)
-    belt_crop = (bx, by, bx2, by2)
 
     tracker = MovingZoneTracker(
         belt_speed=belt_speed * frame_skip,
@@ -724,9 +718,7 @@ def run(args):
                         (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.35,
                         (0, 255, 255), 1)
 
-                    bx, by, bx2, by2 = belt_crop
-                    cropped = ann[by:by2, bx:bx2]
-                    update_mjpeg_frame(cv2.resize(cropped, (1280, 720)))
+                    update_mjpeg_frame(ann)
                     if ann_writer and ann_writer.poll() is None:
                         try:
                             ann_writer.stdin.write(ann.tobytes())
