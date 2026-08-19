@@ -725,7 +725,8 @@ def run(args):
                         (0, 255, 255), 1)
 
                     bx, by, bx2, by2 = belt_crop
-                    update_mjpeg_frame(ann[by:by2, bx:bx2])
+                    cropped = ann[by:by2, bx:bx2]
+                    update_mjpeg_frame(cv2.resize(cropped, (1280, 720)))
                     if ann_writer and ann_writer.poll() is None:
                         try:
                             ann_writer.stdin.write(ann.tobytes())
