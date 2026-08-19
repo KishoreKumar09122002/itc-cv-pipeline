@@ -90,14 +90,36 @@ echo   Press Ctrl+C to stop streaming.
 echo ============================================================
 echo.
 
-:: ---- Start mediamtx in background ----
-start "MediaMTX" cmd /c "!MEDIAMTX!"
-timeout /t 2 /nobreak >nul
+:: ---- Start mediamtx from its own directory ----
+pushd "%~dp0tools"
+start "MediaMTX" /min mediamtx.exe
+popd
+
+:: ---- Wait for mediamtx to bind port 8554 ----
+echo   Waiting for MediaMTX to start...
+set "MTX_READY=0"
+for /l %%i in (1,1,10) do (
+    if !MTX_READY! equ 0 (
+        netstat -an | findstr "LISTENING" | findstr ":8554" >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "MTX_READY=1"
+            echo   [OK] MediaMTX listening on port 8554
+        ) else (
+            timeout /t 1 /nobreak >nul
+        )
+    )
+)
+if !MTX_READY! equ 0 (
+    echo   [ERROR] MediaMTX failed to start on port 8554
+    taskkill /im mediamtx.exe /f >nul 2>&1
+    pause
+    exit /b 1
+)
 
 :: ---- Stream video with ffmpeg (-re = real-time speed, -stream_loop = loop forever) ----
-"!FFMPEG!" -re -stream_loop -1 -i "!VIDEO!" -c:v libx264 -preset ultrafast -tune zerolatency -crf 23 -an -f rtsp rtsp://localhost:8554/live
+"!FFMPEG!" -re -stream_loop -1 -i "!VIDEO!" -vf scale=1280:720 -c:v libx264 -preset ultrafast -tune zerolatency -crf 23 -an -f rtsp rtsp://localhost:8554/live
 
 echo.
 echo   Streaming stopped.
-taskkill /fi "WINDOWTITLE eq MediaMTX" >nul 2>&1
+taskkill /im mediamtx.exe /f >nul 2>&1
 pause
