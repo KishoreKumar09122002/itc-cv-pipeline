@@ -92,14 +92,25 @@ def main():
     if is_rtsp:
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
     cap = cv2.VideoCapture(VIDEO_PATH, cv2.CAP_FFMPEG if is_rtsp else cv2.CAP_ANY)
+    if not cap.isOpened():
+        print("Cannot open %s" % VIDEO_PATH)
+        return
+
     if not is_rtsp:
         fps = cap.get(cv2.CAP_PROP_FPS)
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(FRAME_TIME_SEC * fps))
-    ret, frame = cap.read()
+
+    frame = None
+    for i in range(30):
+        ret, f = cap.read()
+        if ret and f is not None and f.size > 0:
+            frame = f
+            if i >= 4:
+                break
     cap.release()
 
-    if not ret:
-        print("Cannot read frame from %s" % VIDEO_PATH)
+    if frame is None:
+        print("Cannot read a stable frame from %s" % VIDEO_PATH)
         return
 
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
