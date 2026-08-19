@@ -51,6 +51,20 @@ class MJPEGHandler(BaseHTTPRequestHandler):
     frame_lock = threading.Lock()
 
     def do_GET(self):
+        if self.path == "/":
+            page = (
+                '<!doctype html><html><head><title>ITC Belt Monitor</title>'
+                '<style>*{margin:0;padding:0}body{background:#000;'
+                'display:flex;align-items:center;justify-content:center;'
+                'height:100vh}img{width:100%;height:100%;object-fit:contain}'
+                '</style></head><body>'
+                '<img src="/live" alt="Live Feed"/></body></html>'
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(page.encode())
+            return
         if self.path != "/live":
             self.send_error(404)
             return
