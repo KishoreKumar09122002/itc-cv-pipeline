@@ -237,6 +237,7 @@ class ThreadedCapture:
         self._frame = None
         self._ret = False
         self._stopped = False
+        self._seq = 0
         self._thread = threading.Thread(target=self._grab, daemon=True)
         self._thread.start()
 
@@ -246,6 +247,8 @@ class ThreadedCapture:
             with self._lock:
                 self._ret = ret
                 self._frame = frame
+                if ret:
+                    self._seq += 1
             if not ret:
                 break
 
@@ -254,6 +257,11 @@ class ThreadedCapture:
             if self._frame is None:
                 return False, None
             return self._ret, self._frame.copy()
+
+    @property
+    def seq(self):
+        with self._lock:
+            return self._seq
 
     def get(self, prop):
         return self._cap.get(prop)
@@ -451,11 +459,16 @@ def run(args):
 
     processed = 0
     frame_count = 0
+    last_seq = 0
     t_start = time.time()
     stream_start = time.time()
 
     try:
         while True:
+            if hasattr(cap, 'seq') and cap.seq == last_seq:
+                time.sleep(0.002)
+                continue
+
             ret, frame = cap.read()
             if not ret or frame is None:
                 if not cap.isOpened():
@@ -467,8 +480,12 @@ def run(args):
                         print("  [ERROR] All reconnect attempts failed. Exiting.",
                               flush=True)
                         break
+                    last_seq = 0
                 time.sleep(0.01)
                 continue
+
+            if hasattr(cap, 'seq'):
+                last_seq = cap.seq
 
             frame_count += 1
             if frame_count % frame_skip != 0:
